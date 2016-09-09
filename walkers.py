@@ -19,9 +19,9 @@ __author__ = "Tibicen"
 __copyright__ = "Copyright 2014"
 STOP = False
 SAVE = False
-TARGET = (0, 5000)
+TARGET = (-500, 0)
 ROUNDS = 1
-WALKERS_COUNT = 500
+WALKERS_COUNT = 1
 COLOR = True
 
 
@@ -92,10 +92,12 @@ class Walker(object):
                 radians(randrange(-self.angle, self.angle + 1))
         else:
             # narrowing or widening target direction
-            # if  0.1 < abs(self.deltaT[-1] - self.deltaT[-2]) - abs(self.deltaT[-2] - self.deltaT[-3]):
+            # if  0.1 < abs(self.deltaT[-1] - self.deltaT[-2]) - \
+            #         abs(self.deltaT[-2] - self.deltaT[-3]):
             #     self.angle = 2
             #     self.angle_change = 2
-            if self.deltaT[-1] - self.deltaT[-2] < self.deltaT[-2] - self.deltaT[-3]:
+            if self.deltaT[-1] - self.deltaT[-2] < self.deltaT[-2] - \
+                    self.deltaT[-3]:
                 self.angle_change -= .1
             else:
                 self.angle_change += .1
@@ -206,7 +208,8 @@ def walks(walkers, plt, ax, maxs, step):
             plt.draw()
             nr = 0
             for x in listdir():
-                if x.startswith('walkers') and not x.endswith('.py'):
+                if x.startswith('walkers') and not x.endswith('.py') and \
+                        'walkers.' not in x:
                     nr = max(nr, int(x.split('.')[0][-3:]))
                 name = 'walkers' + '{:03d}'.format(nr + 1)
             for format in ('png', 'svg', 'pdf'):
