@@ -2,4 +2,6 @@
 *.svg
 *.pdf
 *.jpg
+images
 !walkers.jpg
+

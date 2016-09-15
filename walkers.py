@@ -9,9 +9,10 @@ Created on Fri Feb 27 15:41:57 2015
 @date:
 @version: 0.0.1
 """
+from math import cos, pi, radians, sin, sqrt
 from os import listdir
 from random import random, randrange
-from math import sin, cos, radians, sqrt, pi
+
 import matplotlib.pyplot as plt
 from matplotlib.colors import hsv_to_rgb
 
