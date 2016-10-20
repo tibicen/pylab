@@ -1,57 +1,92 @@
+# -*- coding: utf-8 -*-
+'''Script to download images from search results.
+'''
 import os
-# from selenium.common.exceptions import StaleElementReferenceException
-# from selenium.webdriver.common.keys import Keys
+import re
+import sys
+# import argparse
 from multiprocessing import Pool
+from selenium import webdriver
 from time import sleep
 
 import colorama
 import requests
 from colorama import Fore, Style
-from progress.bar import Bar
-from requests.utils import unquote
-from selenium import webdriver
-
-WORK_DIR = os.getcwd()
-# WORK_DIR = '/home/tibicen/tf_files/star_wars'
-ADRESS = 'https://www.google.pl/imghp?hl=pl'
-SEARCH = 'darth vader'
 
 colorama.init()
 
+TOPIC = 'animals'
+if len(sys.argv) > 1:
+    SEARCH = sys.argv[1]
+else:
+    SEARCH = 'dog'
+if len(sys.argv) > 2:
+    WORK_DIR = sys.argv[2]
+else:
+    WORK_DIR = os.getcwd()
+    # WORK_DIR = '/home/tibicen/tf_files/star_wars'
 
-def getDriver():
+
+def get_driver():
+    ''' Webdriver wrapper.
+    returns: driver
+    '''
     if os.name == 'nt':
-        CHROMEDRIVER = "C:\webdriver\chromedriver.exe"
-        os.environ["webdriver.chrome.driver"] = CHROMEDRIVER
-        driver = webdriver.Chrome(CHROMEDRIVER)
+        CHROME_DRIVER = "C:\\webdriver\\chromedriver.exe"
+        os.environ["webdriver.chrome.driver"] = CHROME_DRIVER
+        driver = webdriver.Chrome(CHROME_DRIVER)
     else:
         driver = webdriver.Chrome()
     # driver = webdriver.Firefox()
     return driver
 
-def downloadFile(url, overwriteName=None):
+
+def download_file(url, overwriteName=None):
     if overwriteName:
-        overwriteName + '.' + url.split('.')[-1]
-        pass
+        localFile = overwriteName + '.' + url.split('.')[-1].replace('?', '')
     else:
-        localFile = url.split('/')[-1]
-    r = requests.get(url, stream=True)
-    with open(localFile, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-    return localFile
+        localFile = url.split('/')[-1].replace('?', '')
+    if localFile not in os.listdir():
+        r = requests.get(url, stream=True)
+        with open(localFile, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
 
 
-def getLinks(ADRESS, SEARCH):
-    driver = getDriver()
+def find_bing_links(search, driver):
+    ADRESS = 'https://www.bing.com/?scope=images'
     driver.get(ADRESS)
     searchbox = driver.find_element_by_name('q')
-    search = driver.find_element_by_name("btnG")
-    searchbox.send_keys(SEARCH)
-    search.click()
+    searchBnt = driver.find_element_by_name("go")
+    searchbox.send_keys(search)
+    searchBnt.click()
+    tmp = len(driver.find_elements_by_class_name('dg_b'))
+    while True:
+        driver.execute_script(
+            "window.scrollTo(0, document.body.scrollHeight);")
+        sleep(2)
+        if len(driver.find_elements_by_class_name('dg_b')) > tmp:
+            tmp = len(driver.find_elements_by_class_name('dg_b'))
+        else:
+            break
+    sleep(2)
+    links = []
+    for n in driver.find_elements_by_xpath('//a[@m]'):
+        links.append(re.findall('imgurl:"(.*?)"',
+                                n.get_attribute('m'))[0].split('?')[0])
     # footer = driver.find_element_by_class_name('fbar')
     # footer.click()
+    return links
+
+
+def find_google_links(search, driver):
+    ADRESS = 'https://www.google.pl/imghp'
+    driver.get(ADRESS)
+    searchbox = driver.find_element_by_name('q')
+    search_btn = driver.find_element_by_name("btnG")
+    searchbox.send_keys(search)
+    search_btn.click()
     links = []
     tmpPics = []
     while True:
@@ -59,41 +94,61 @@ def getLinks(ADRESS, SEARCH):
         if more.get_attribute('style') == 'display: none;':
             driver.execute_script(
                 "window.scrollTo(0, document.body.scrollHeight);")
-            sleep(1)
+            sleep(2)
         else:
             driver.execute_script(
                 "window.scrollTo(0, document.body.scrollHeight);")
             moreButton = driver.find_element_by_id('smb')
             moreButton.click()
-            sleep(1)
+            sleep(2)
         pics = driver.find_elements_by_class_name('rg_l')
         if len(pics) == len(tmpPics):
-            print('bam')
             break
         tmpPics = pics
-    links = [unquote(p.get_attribute('href'))[
-        36:].split('&imgrefurl')[0] for p in pics]
-    f = open(SEARCH.replace(' ', '_') + '.txt', 'w')
-    for el in links:
-        f.write(el + '\n')
+    links = [re.findall('\\?imgurl=(.*?)\\&imgrefurl=',
+                        requests.utils.unquote(
+                            p.get_attribute('href')))[0].split('?')[0] for p in pics]
+    return links
+
+
+def find_all_links(search):
+    driver = get_driver()
+    if search.replace(' ', '_') + '.txt' in os.listdir():
+        with open(os.path.join(os.getcwd(), search.replace(' ', '_') +
+                               '.txt'), 'r') as f:
+            links = f.readlines()
+        links = [l.rstrip('\n') for l in links]
+    else:
+        links = find_google_links(search, driver) + \
+            find_bing_links(search, driver)
+    # saves all the links to a txt file
+    f = open(search.replace(' ', '_') + '.txt', 'w')
+    tmp = []
+    links.sort()
+    for url in links:
+        if url != tmp[-1]:  # clean duplicates
+            f.write(url + '\n')
+            tmp.append(url)
     f.close()
     return links
 
 
-def downloadLinks(links):
-    os.mkdir('{}'.format(SEARCH.replace(' ', '_')))
-    os.chdir('{}'.format(SEARCH.replace(' ', '_')))
+def download_links(search, links, download_folder):
+    os.chdir(download_folder)
+    if search.replace(' ', '_') not in os.listdir():
+        os.mkdir('{}'.format(search.replace(' ', '_')))
+    os.chdir('{}'.format(search.replace(' ', '_')))
     exceptions = []
     for n, url in enumerate(links):
-        try:
-            # downloadFile(url, '{}'.format(SEARCH.replace(' ','_')))
-            downloadFile(url)
-            print(Fore.GREEN + '[v]' + Style.RESET_ALL +
-                  ' downloaded {}: {}'.format(n, url))
-        except:
-            print(Fore.RED + '[x]' + Style.RESET_ALL +
-                  ' failed to download {}: {}'.format(n, url))
-            exceptions.append(url + '\n')
+        # try:
+            # download_file(url, '{}'.format(SEARCH.replace(' ','_')))
+        download_file(url)
+        print(Fore.GREEN + '[v]' + Style.RESET_ALL +
+              ' downloaded {}: {}'.format(n, url))
+        # except:
+        #     print(Fore.RED + '[x]' + Style.RESET_ALL +
+        #           ' failed to download {}: {}'.format(n, url))
+        #     exceptions.append(url + '\n')
     f = open('failed.txt', 'w')
     for el in exceptions:
         f.write(el)
@@ -101,38 +156,49 @@ def downloadLinks(links):
 
 
 def job(input):
-    nr, url, exceptions = input
+    nr, url = input
+    exceptions = []
     try:
-        # downloadFile(url, '{}'.format(SEARCH.replace(' ','_')))
-        downloadFile(url)
+        # download_file(url, '{}'.format(SEARCH.replace(' ','_')))
+        download_file(url)
         print(Fore.GREEN + '[v]' + Style.RESET_ALL +
               ' downloaded {}: {}'.format(nr, url))
-    except:
+    except(FileNotFoundError):  # TODO Exception!
         print(Fore.RED + '[x]' + Style.RESET_ALL +
               ' failed to download {}: {}'.format(nr, url))
-        exceptions.append(url + '\n')
+        exceptions.append(url)
+    return exceptions
 
 
-def downloadLinksMULTI(SEARCH, links, downloadFolder):
-    os.chdir(downloadFolder)
-    try:
-        os.mkdir('{}'.format(SEARCH.replace(' ', '_')))
-    except(FileExistsError):
-        pass
-    os.chdir('{}'.format(SEARCH.replace(' ', '_')))
-    exceptions = []
-    z = zip(range(len(links)), links, [exceptions for x in range(len(links))])
+def download_multiple_links(search, links, download_folder):
+    os.chdir(download_folder)
+    if search.replace(' ', '_') not in os.listdir():
+        os.mkdir('{}'.format(search.replace(' ', '_')))
+    os.chdir('{}'.format(search.replace(' ', '_')))
+    # z = zip(range(len(links)), links)
     pool = Pool()
-    # bar = Bar('Processing', max=len(links))
-    for i in pool.imap(job, z):
-        # bar.next()
-        pass
-    # bar.finish()
+    errors = []
+    for i in pool.imap(job, enumerate(links)):
+        if i:
+            errors.append(i[0])
+    f = open(os.path.join(WORK_DIR, SEARCH.replace(
+        ' ', '_') + '_ERRORS.txt'), 'w')
+    for e in errors:
+        f.write(e + '\n')
+    f.close()
 
-os.chdir(WORK_DIR)
-links = getLinks(ADRESS, SEARCH)
-# with open(SEARCH.replace(' ', '_') + '.txt', 'r') as f:
-#     t = f.readlines()
-# links = [x.rstrip('\n') for x in t]
-#
-# downloadLinksMULTI(SEARCH, links, '/home/tibicen/tf_files/star_wars')
+
+if __name__ == '__main__':
+    # driver = get_driver()
+    # links = find_bing_links(SEARCH, driver)
+    links = find_all_links(SEARCH)
+    os.chdir(WORK_DIR)
+    if TOPIC.replace(' ', '_') not in os.listdir('J:\\tf_files'):
+        os.mkdir(os.path.join('J:\\tf_files', TOPIC.replace(' ', '_')))
+    download_multiple_links(SEARCH, links, os.path.join(
+        'J:\\tf_files', TOPIC.replace(' ', '_')))
+
+
+# for l in links:
+#     if not l.lower().endswith(('gif', 'jpg', 'jpeg', 'bmp', 'png')):
+#         print(l[-50:])
