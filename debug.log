@@ -1,7 +1,0 @@
-[0916/111020:ERROR:process_reader_win.cc(142)] SuspendThread: Odmowa dostêpu. (0x5)
-[0916/111020:ERROR:process_reader_win.cc(114)] NtOpenThread: {Odmowa dostêpu} Proces za¿¹da³ dostêpu do obiektu, ale prawa dostêpu nie zosta³y przyznane.  (0xc0000022)
-[0916/111020:ERROR:exception_snapshot_win.cc(88)] thread ID 7600 not found in process
-[0916/111020:WARNING:crash_report_exception_handler.cc(60)] ProcessSnapshotWin::InitializeException failed
-[0916/111159:ERROR:process_reader_win.cc(114)] NtOpenThread: {Odmowa dostêpu} Proces za¿¹da³ dostêpu do obiektu, ale prawa dostêpu nie zosta³y przyznane.  (0xc0000022)
-[0916/111159:ERROR:exception_snapshot_win.cc(88)] thread ID 4120 not found in process
-[0916/111159:WARNING:crash_report_exception_handler.cc(60)] ProcessSnapshotWin::InitializeException failed
