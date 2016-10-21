@@ -13,6 +13,7 @@ Fun with matplotlib library. Walkers script with many possibilities of configura
 ##collisions.py
 ####[pylab]
 Fun with matplotlib library. Walkers script with many possibilities of configuration (for future deep learning studies)
+![](http://i.imgur.com/7K29W1L.gif)
 
 ##walkers.py
 ####[pylab]
