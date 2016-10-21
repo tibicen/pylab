@@ -153,6 +153,7 @@ while True:
     if rounds % 1 == 0:
         timeTxt.set_text('Round: ' + str(rounds))
         plt.draw()
+        plt.savefig('collisions\\collisions_{:03d}.png'.format(rounds))
         plt.pause(0.00000000000000000000000001)
 
 
