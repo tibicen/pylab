@@ -115,14 +115,14 @@ plt.show()
 
 circles = []
 texts = []
-top = 30
-for n in range(top):
+amount = 200
+for n in range(amount):
     x, y = random() * 40 - 20, random() * 40 - 20
 #    x,y = 6*n, 0
 #    r = random()*4+1
     r = 3
     circles.append(Walker((x, y), randrange(2, 10),
-                          color=colors.hsv_to_rgb(n / float(top),
+                          color=colors.hsv_to_rgb(n / float(amount),
                                                   .4 + .3 * random(),
                                                   .6 + .2 * random())))
     texts.append(plt.Text(x, y, str(n), verticalalignment='center',
@@ -150,11 +150,12 @@ while True:
         if w.center[0] > xmax:
             xmax = w.center[0]
         ax.xlim = (0, xmax)
-    if rounds % 1 == 0:
-        timeTxt.set_text('Round: ' + str(rounds))
-        plt.draw()
-        plt.savefig('collisions\\collisions_{:03d}.png'.format(rounds))
-        plt.pause(0.00000000000000000000000001)
+    # if rounds % 10 == 0:
+        # print('starts {}'.format(rounds))
+        # plt.draw()
+        # plt.pause(0.00000000000000000000000001)
+    timeTxt.set_text('Round: ' + str(rounds))
+    plt.savefig('collisions\\collisions_{:03d}.png'.format(rounds))
 
 
 for n in circles:

@@ -105,9 +105,8 @@ def find_google_links(search, driver):
         if len(pics) == len(tmpPics):
             break
         tmpPics = pics
-    links = [re.findall('\\?imgurl=(.*?)\\&imgrefurl=',
-                        requests.utils.unquote(
-                            p.get_attribute('href')))[0].split('?')[0] for p in pics]
+    links = [re.findall('\\?imgurl=(.*?)\\&imgrefurl=', requests.utils.unquote(
+        p.get_attribute('href')))[0].split('?')[0] for p in pics]
     return links
 
 
@@ -150,13 +149,13 @@ def download_links(search, links, download_folder):
         #           ' failed to download {}: {}'.format(n, url))
         #     exceptions.append(url + '\n')
     f = open('failed.txt', 'w')
-    for el in exceptions:
-        f.write(el)
+    for element in exceptions:
+        f.write(element)
     f.close()
 
 
-def job(input):
-    nr, url = input
+def job(task):
+    nr, url = task
     exceptions = []
     try:
         # download_file(url, '{}'.format(SEARCH.replace(' ','_')))
@@ -183,8 +182,8 @@ def download_multiple_links(search, links, download_folder):
             errors.append(i[0])
     f = open(os.path.join(WORK_DIR, SEARCH.replace(
         ' ', '_') + '_ERRORS.txt'), 'w')
-    for e in errors:
-        f.write(e + '\n')
+    for error in errors:
+        f.write(error + '\n')
     f.close()
 
 
